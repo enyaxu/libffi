@@ -132,15 +132,6 @@ _L__##name:
 	UNWIND .fnstart
 #endif
 
-.macro	RETLDM
-#if defined (__INTERWORKING__)
-	ldr	lr, [sp], #4
-	bx	lr
-#else
-	ldr	pc, [sp], #4
-#endif
-.endm
-
 	@ r0:   ffi_prep_args
 	@ r1:   &ecif
 	@ r2:   cif->bytes
@@ -403,7 +394,12 @@ LSYM(Lbase_args):
 	fstmiadeq	r2, {d0-d3}
 
 LSYM(Lepilogue_vfp):
-	RETLDM	"r0-r3,fp"
+#if defined (__INTERWORKING__)
+  ldmia   sp!, {r0-r3,fp, lr}
+  bx  lr
+#else
+  ldmia   sp!, {r0-r3,fp, pc}
+#endif
 
 .ffi_call_VFP_end:
 	UNWIND .fnend
