@@ -7,7 +7,7 @@ ACLOCAL_AMFLAGS = -I m4
 SUBDIRS = include testsuite man
 
 EXTRA_DIST = LICENSE ChangeLog.v1 ChangeLog.libgcj configure.host	\
-	 src/aarch64/ffi.c src/aarch64/ffitarget.h src/aarch64/sysv.S	\
+	 src/aarch64/ffi.c src/aarch64/ffitarget.h src/aarch64/sysv.c	\
 	 src/alpha/ffi.c src/alpha/osf.S			\
 	 src/alpha/ffitarget.h src/arc/ffi.c src/arc/arcompact.S	\
 	 src/arc/ffitarget.h src/arm/ffi.c src/arm/sysv.S		\
@@ -180,7 +180,7 @@ if POWERPC_FREEBSD
 nodist_libffi_la_SOURCES += src/powerpc/ffi.c src/powerpc/ffi_sysv.c src/powerpc/sysv.S src/powerpc/ppc_closure.S
 endif
 if AARCH64
-nodist_libffi_la_SOURCES += src/aarch64/sysv.S src/aarch64/ffi.c
+nodist_libffi_la_SOURCES += src/aarch64/sysv.c src/aarch64/ffi.c
 endif
 if ARC
 nodist_libffi_la_SOURCES += src/arc/arcompact.S src/arc/ffi.c

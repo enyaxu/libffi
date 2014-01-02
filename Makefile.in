@@ -101,7 +101,7 @@ target_triplet = @target@
 @POWERPC_AIX_TRUE@am__append_19 = src/powerpc/ffi_darwin.c src/powerpc/aix.S src/powerpc/aix_closure.S
 @POWERPC_DARWIN_TRUE@am__append_20 = src/powerpc/ffi_darwin.c src/powerpc/darwin.S src/powerpc/darwin_closure.S
 @POWERPC_FREEBSD_TRUE@am__append_21 = src/powerpc/ffi.c src/powerpc/ffi_sysv.c src/powerpc/sysv.S src/powerpc/ppc_closure.S
-@AARCH64_TRUE@am__append_22 = src/aarch64/sysv.S src/aarch64/ffi.c
+@AARCH64_TRUE@am__append_22 = src/aarch64/sysv.c src/aarch64/ffi.c
 @ARC_TRUE@am__append_23 = src/arc/arcompact.S src/arc/ffi.c
 @ARM_TRUE@am__append_24 = src/arm/sysv.S src/arm/ffi.c
 @ARM_TRUE@@FFI_EXEC_TRAMPOLINE_TABLE_TRUE@am__append_25 = src/arm/trampoline.S
@@ -592,7 +592,7 @@ AUTOMAKE_OPTIONS = foreign subdir-objects
 ACLOCAL_AMFLAGS = -I m4
 SUBDIRS = include testsuite man
 EXTRA_DIST = LICENSE ChangeLog.v1 ChangeLog.libgcj configure.host	\
-	 src/aarch64/ffi.c src/aarch64/ffitarget.h src/aarch64/sysv.S	\
+	 src/aarch64/ffi.c src/aarch64/ffitarget.h src/aarch64/sysv.c	\
 	 src/alpha/ffi.c src/alpha/osf.S			\
 	 src/alpha/ffitarget.h src/arc/ffi.c src/arc/arcompact.S	\
 	 src/arc/ffitarget.h src/arm/ffi.c src/arm/sysv.S		\
