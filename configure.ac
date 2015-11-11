@@ -2,13 +2,17 @@ dnl Process this with autoconf to create configure
 
 AC_PREREQ(2.68)
 
-AC_INIT([libffi], [3.0.14-rc0], [http://github.com/atgreen/libffi/issues])
+AC_INIT([libffi], [3.99999], [http://github.com/atgreen/libffi/issues])
 AC_CONFIG_HEADERS([fficonfig.h])
 
 AC_CANONICAL_SYSTEM
 target_alias=${target_alias-$host_alias}
 
-. ${srcdir}/configure.host
+case "${host}" in
+  frv*-elf)
+    LDFLAGS=`echo $LDFLAGS | sed "s/\-B[^ ]*libgloss\/frv\///"`\ -B`pwd`/../libgloss/frv/
+    ;;
+esac
 
 AX_ENABLE_BUILDDIR
 
@@ -25,6 +29,7 @@ m4_rename([_AC_ARG_VAR_PRECIOUS],[real_PRECIOUS])
 m4_define([_AC_ARG_VAR_PRECIOUS],[])
 save_CFLAGS=$CFLAGS
 AC_PROG_CC
+AC_PROG_CXX
 CFLAGS=$save_CFLAGS
 m4_undefine([_AC_ARG_VAR_PRECIOUS])
 m4_rename_force([real_PRECIOUS],[_AC_ARG_VAR_PRECIOUS])
@@ -49,17 +54,17 @@ fi
 
 if test "x$GCC" = "xyes"; then
   CFLAGS="$CFLAGS -fexceptions"
-  touch local.exp
-else
-  cat > local.exp <<EOF
-set CC_FOR_TARGET "$CC"
-EOF
 fi
+
+cat > local.exp <<EOF
+set CC_FOR_TARGET "$CC"
+set CXX_FOR_TARGET "$CXX"
+EOF
 
 AM_MAINTAINER_MODE
 
 AC_CHECK_HEADERS(sys/mman.h)
-AC_CHECK_FUNCS(mmap)
+AC_CHECK_FUNCS([mmap mkostemp])
 AC_FUNC_MMAP_BLACKLIST
 
 dnl The -no-testsuite modules omit the test subdir.
@@ -67,264 +72,15 @@ AM_CONDITIONAL(TESTSUBDIR, test -d $srcdir/testsuite)
 
 TARGETDIR="unknown"
 HAVE_LONG_DOUBLE_VARIANT=0
-case "$host" in
-  aarch64*-*-*)
-	TARGET=AARCH64; TARGETDIR=aarch64
-	;;
 
-  alpha*-*-*)
-	TARGET=ALPHA; TARGETDIR=alpha;
-	# Support 128-bit long double, changeable via command-line switch.
-	HAVE_LONG_DOUBLE='defined(__LONG_DOUBLE_128__)'
-	;;
+. ${srcdir}/configure.host
 
-  arc*-*-*)
-	TARGET=ARC; TARGETDIR=arc
-	;;
-
-  arm*-*-*)
-	TARGET=ARM; TARGETDIR=arm
-	;;
-
-  amd64-*-freebsd* | amd64-*-openbsd*)
-	TARGET=X86_64; TARGETDIR=x86
-  	;;
-
-  amd64-*-freebsd*)
-	TARGET=X86_64; TARGETDIR=x86
-  	;;
-
-  amd64-*-freebsd*)
-	TARGET=X86_64; TARGETDIR=x86
-	;;
-
-  avr32*-*-*)
-	TARGET=AVR32; TARGETDIR=avr32
-	;;
-
-  bfin*)
-  	TARGET=BFIN; TARGETDIR=bfin
-  	;;
-
-  cris-*-*)
-	TARGET=LIBFFI_CRIS; TARGETDIR=cris
-	;;
-
-  frv-*-*)
-	TARGET=FRV; TARGETDIR=frv
-	;;
-
-  hppa*-*-linux* | parisc*-*-linux* | hppa*-*-openbsd*)
-	TARGET=PA_LINUX; TARGETDIR=pa
-	;;
-  hppa*64-*-hpux*)
-	TARGET=PA64_HPUX; TARGETDIR=pa
-	;;
-  hppa*-*-hpux*)
-	TARGET=PA_HPUX; TARGETDIR=pa
-	;;
-
-  i?86-*-freebsd* | i?86-*-openbsd*)
-	TARGET=X86_FREEBSD; TARGETDIR=x86
-	;;
-  i?86-win32* | i?86-*-cygwin* | i?86-*-mingw* | i?86-*-os2* | i?86-*-interix*)
-	TARGET=X86_WIN32; TARGETDIR=x86
-	# All mingw/cygwin/win32 builds require -no-undefined for sharedlib.
-	# We must also check with_cross_host to decide if this is a native
-	# or cross-build and select where to install dlls appropriately.
-	if test -n "$with_cross_host" &&
-	   test x"$with_cross_host" != x"no"; then
-	  AM_LTLDFLAGS='-no-undefined -bindir "$(toolexeclibdir)"';
-	else
-	  AM_LTLDFLAGS='-no-undefined -bindir "$(bindir)"';
-	fi
-	;;
-  i?86-*-darwin*)
-	TARGET=X86_DARWIN; TARGETDIR=x86
-	;;
-  i?86-*-solaris2.1[[0-9]]*)
-	TARGETDIR=x86
-	if test $ac_cv_sizeof_size_t = 4; then
-	  TARGET=X86; 
-	else
-	  TARGET=X86_64; 
-	fi	  
-	;;
-
-  x86_64-*-darwin*)
-	TARGET=X86_DARWIN; TARGETDIR=x86
-	;;
-
-  x86_64-*-cygwin* | x86_64-*-mingw*)
-	TARGET=X86_WIN64; TARGETDIR=x86
-	# All mingw/cygwin/win32 builds require -no-undefined for sharedlib.
-	# We must also check with_cross_host to decide if this is a native
-	# or cross-build and select where to install dlls appropriately.
-	if test -n "$with_cross_host" &&
-	   test x"$with_cross_host" != x"no"; then
-	  AM_LTLDFLAGS='-no-undefined -bindir "$(toolexeclibdir)"';
-	else
-	  AM_LTLDFLAGS='-no-undefined -bindir "$(bindir)"';
-	fi
-	;;
-
-  i?86-*-* | x86_64-*-*)
-	TARGETDIR=x86
-	if test $ac_cv_sizeof_size_t = 4; then
-	  case "$host" in
-	    *-gnux32)
-	      TARGET=X86_64
-	      ;;
-	    *)
-	      TARGET=X86
-	      ;;
-          esac	
-	else
-	  TARGET=X86_64; 
-	fi	  
-	;;
-
-  ia64*-*-*)
-	TARGET=IA64; TARGETDIR=ia64
-	;;
-
-  m32r*-*-*)
-	TARGET=M32R; TARGETDIR=m32r
-	;;
-
-  m68k-*-*)
-	TARGET=M68K; TARGETDIR=m68k
-	;;
-
-  m88k-*-*)
-	TARGET=M88K; TARGETDIR=m88k
-	;;
-
-  microblaze*-*-*)
-	TARGET=MICROBLAZE; TARGETDIR=microblaze
-	;;
-
-  moxie-*-*)
-	TARGET=MOXIE; TARGETDIR=moxie
-	;;
-
-  metag-*-*)
-	TARGET=METAG; TARGETDIR=metag
-	;;
-
-  mips-sgi-irix5.* | mips-sgi-irix6.* | mips*-*-rtems*)
-	TARGET=MIPS; TARGETDIR=mips
-	;;
-  mips*-*-linux* | mips*-*-openbsd*)
-	# Support 128-bit long double for NewABI.
-	HAVE_LONG_DOUBLE='defined(__mips64)'
-	TARGET=MIPS; TARGETDIR=mips
-	;;
-
-  nios2*-linux*)
-	TARGET=NIOS2; TARGETDIR=nios2
-	;;
-
-  powerpc*-*-linux* | powerpc-*-sysv*)
-	TARGET=POWERPC; TARGETDIR=powerpc
-	HAVE_LONG_DOUBLE_VARIANT=1
-	;;
-  powerpc-*-amigaos*)
-	TARGET=POWERPC; TARGETDIR=powerpc
-	;;
-  powerpc-*-beos*)
-	TARGET=POWERPC; TARGETDIR=powerpc
-	;;
-  powerpc-*-darwin* | powerpc64-*-darwin*)
-	TARGET=POWERPC_DARWIN; TARGETDIR=powerpc
-	;;
-  powerpc-*-aix* | rs6000-*-aix*)
-	TARGET=POWERPC_AIX; TARGETDIR=powerpc
-	;;
-  powerpc-*-freebsd* | powerpc-*-openbsd*)
-	TARGET=POWERPC_FREEBSD; TARGETDIR=powerpc
-	HAVE_LONG_DOUBLE_VARIANT=1
-	;;
-  powerpc64-*-freebsd*)
-	TARGET=POWERPC; TARGETDIR=powerpc
-	;;
-  powerpc*-*-rtems*)
-	TARGET=POWERPC; TARGETDIR=powerpc
-	;;
-
-  s390-*-* | s390x-*-*)
-	TARGET=S390; TARGETDIR=s390
-	;;
-
-  sh-*-* | sh[[34]]*-*-*)
-	TARGET=SH; TARGETDIR=sh
-	;;
-  sh64-*-* | sh5*-*-*)
-	TARGET=SH64; TARGETDIR=sh64
-	;;
-
-  sparc*-*-*)
-	TARGET=SPARC; TARGETDIR=sparc
-	;;
-
-  tile*-*)
-        TARGET=TILE; TARGETDIR=tile
-        ;;
-
-  vax-*-*)
-	TARGET=VAX; TARGETDIR=vax
-	;;
-
-  xtensa*-*)
-	TARGET=XTENSA; TARGETDIR=xtensa
-	;;
-
-esac
-
-AC_SUBST(AM_RUNTESTFLAGS)
-AC_SUBST(AM_LTLDFLAGS)
-
-if test $TARGETDIR = unknown; then
+if test -n "${UNSUPPORTED}"; then
   AC_MSG_ERROR(["libffi has not been ported to $host."])
 fi
 
-AM_CONDITIONAL(MIPS, test x$TARGET = xMIPS)
-AM_CONDITIONAL(BFIN, test x$TARGET = xBFIN)
-AM_CONDITIONAL(SPARC, test x$TARGET = xSPARC)
-AM_CONDITIONAL(X86, test x$TARGET = xX86)
-AM_CONDITIONAL(X86_FREEBSD, test x$TARGET = xX86_FREEBSD)
-AM_CONDITIONAL(X86_WIN32, test x$TARGET = xX86_WIN32)
-AM_CONDITIONAL(X86_WIN64, test x$TARGET = xX86_WIN64)
-AM_CONDITIONAL(X86_DARWIN, test x$TARGET = xX86_DARWIN)
-AM_CONDITIONAL(ALPHA, test x$TARGET = xALPHA)
-AM_CONDITIONAL(IA64, test x$TARGET = xIA64)
-AM_CONDITIONAL(M32R, test x$TARGET = xM32R)
-AM_CONDITIONAL(M68K, test x$TARGET = xM68K)
-AM_CONDITIONAL(M88K, test x$TARGET = xM88K)
-AM_CONDITIONAL(MICROBLAZE, test x$TARGET = xMICROBLAZE)
-AM_CONDITIONAL(METAG, test x$TARGET = xMETAG)
-AM_CONDITIONAL(MOXIE, test x$TARGET = xMOXIE)
-AM_CONDITIONAL(NIOS2, test x$TARGET = xNIOS2)
-AM_CONDITIONAL(POWERPC, test x$TARGET = xPOWERPC)
-AM_CONDITIONAL(POWERPC_AIX, test x$TARGET = xPOWERPC_AIX)
-AM_CONDITIONAL(POWERPC_DARWIN, test x$TARGET = xPOWERPC_DARWIN)
-AM_CONDITIONAL(POWERPC_FREEBSD, test x$TARGET = xPOWERPC_FREEBSD)
-AM_CONDITIONAL(AARCH64, test x$TARGET = xAARCH64)
-AM_CONDITIONAL(ARC, test x$TARGET = xARC)
-AM_CONDITIONAL(ARM, test x$TARGET = xARM)
-AM_CONDITIONAL(AVR32, test x$TARGET = xAVR32)
-AM_CONDITIONAL(LIBFFI_CRIS, test x$TARGET = xLIBFFI_CRIS)
-AM_CONDITIONAL(FRV, test x$TARGET = xFRV)
-AM_CONDITIONAL(S390, test x$TARGET = xS390)
-AM_CONDITIONAL(X86_64, test x$TARGET = xX86_64)
-AM_CONDITIONAL(SH, test x$TARGET = xSH)
-AM_CONDITIONAL(SH64, test x$TARGET = xSH64)
-AM_CONDITIONAL(PA_LINUX, test x$TARGET = xPA_LINUX)
-AM_CONDITIONAL(PA_HPUX, test x$TARGET = xPA_HPUX)
-AM_CONDITIONAL(PA64_HPUX, test x$TARGET = xPA64_HPUX)
-AM_CONDITIONAL(TILE, test x$TARGET = xTILE)
-AM_CONDITIONAL(VAX, test x$TARGET = xVAX)
-AM_CONDITIONAL(XTENSA, test x$TARGET = xXTENSA)
+AC_SUBST(AM_RUNTESTFLAGS)
+AC_SUBST(AM_LTLDFLAGS)
 
 AC_HEADER_STDC
 AC_CHECK_FUNCS(memcpy)
@@ -355,7 +111,8 @@ AC_C_BIGENDIAN
 
 GCC_AS_CFI_PSEUDO_OP
 
-if test x$TARGET = xSPARC; then
+case "$TARGET" in
+  SPARC)
     AC_CACHE_CHECK([assembler and linker support unaligned pc related relocs],
 	libffi_cv_as_sparc_ua_pcrel, [
 	save_CFLAGS="$CFLAGS"
@@ -384,9 +141,9 @@ if test x$TARGET = xSPARC; then
        AC_DEFINE(HAVE_AS_REGISTER_PSEUDO_OP, 1,
 	       [Define if your assembler supports .register.])
     fi
-fi
+    ;;
 
-if test x$TARGET = xX86 || test x$TARGET = xX86_WIN32 || test x$TARGET = xX86_64; then
+  X86*)
     AC_CACHE_CHECK([assembler supports pc related relocs],
 	libffi_cv_as_x86_pcrel, [
 	libffi_cv_as_x86_pcrel=no
@@ -399,33 +156,25 @@ if test x$TARGET = xX86 || test x$TARGET = xX86_WIN32 || test x$TARGET = xX86_64
 	AC_DEFINE(HAVE_AS_X86_PCREL, 1,
 		  [Define if your assembler supports PC relative relocs.])
     fi
+    ;;
 
-    AC_CACHE_CHECK([assembler .ascii pseudo-op support],
-       libffi_cv_as_ascii_pseudo_op, [
-       libffi_cv_as_ascii_pseudo_op=unknown
-       # Check if we have .ascii
-       AC_TRY_COMPILE(,[asm (".ascii \\"string\\"");],
-		       [libffi_cv_as_ascii_pseudo_op=yes],
-		       [libffi_cv_as_ascii_pseudo_op=no])
-    ])
-    if test "x$libffi_cv_as_ascii_pseudo_op" = xyes; then
-       AC_DEFINE(HAVE_AS_ASCII_PSEUDO_OP, 1,
-	       [Define if your assembler supports .ascii.])
+  S390)
+    AC_CACHE_CHECK([compiler uses zarch features],
+	libffi_cv_as_s390_zarch, [
+	libffi_cv_as_s390_zarch=no
+	echo 'void foo(void) { bar(); bar(); }' > conftest.c
+	if $CC $CFLAGS -S conftest.c > /dev/null 2>&1; then
+	    if grep -q brasl conftest.s; then
+	        libffi_cv_as_s390_zarch=yes
+	    fi
+	fi
+	])
+    if test "x$libffi_cv_as_s390_zarch" = xyes; then
+	AC_DEFINE(HAVE_AS_S390_ZARCH, 1,
+		  [Define if the compiler uses zarch features.])
     fi
-
-    AC_CACHE_CHECK([assembler .string pseudo-op support],
-       libffi_cv_as_string_pseudo_op, [
-       libffi_cv_as_string_pseudo_op=unknown
-       # Check if we have .string
-       AC_TRY_COMPILE(,[asm (".string \\"string\\"");],
-		       [libffi_cv_as_string_pseudo_op=yes],
-		       [libffi_cv_as_string_pseudo_op=no])
-    ])
-    if test "x$libffi_cv_as_string_pseudo_op" = xyes; then
-       AC_DEFINE(HAVE_AS_STRING_PSEUDO_OP, 1,
-	       [Define if your assembler supports .string.])
-    fi
-fi
+    ;;
+esac
 
 # On PaX enable kernels that have MPROTECT enable we can't use PROT_EXEC.
 AC_ARG_ENABLE(pax_emutramp,
@@ -435,16 +184,14 @@ AC_ARG_ENABLE(pax_emutramp,
       [Define this if you want to enable pax emulated trampolines])
   fi)
 
-if test x$TARGET = xX86_WIN64; then
-    LT_SYS_SYMBOL_USCORE
-    if test "x$sys_symbol_underscore" = xyes; then
-        AC_DEFINE(SYMBOL_UNDERSCORE, 1, [Define if symbols are underscored.])
-    fi
+LT_SYS_SYMBOL_USCORE
+if test "x$sys_symbol_underscore" = xyes; then
+    AC_DEFINE(SYMBOL_UNDERSCORE, 1, [Define if symbols are underscored.])
 fi
 
 FFI_EXEC_TRAMPOLINE_TABLE=0
 case "$target" in
-     *arm*-apple-darwin*)
+     *arm*-apple-darwin* | aarch64-apple-darwin*)
        FFI_EXEC_TRAMPOLINE_TABLE=1
        AC_DEFINE(FFI_EXEC_TRAMPOLINE_TABLE, 1,
                  [Cannot use PROT_EXEC on this target, so, we revert to
@@ -460,12 +207,28 @@ AM_CONDITIONAL(FFI_EXEC_TRAMPOLINE_TABLE, test x$FFI_EXEC_TRAMPOLINE_TABLE = x1)
 AC_SUBST(FFI_EXEC_TRAMPOLINE_TABLE)
 
 if test x$TARGET = xX86_64; then
-    AC_CACHE_CHECK([assembler supports unwind section type],
+    AC_CACHE_CHECK([toolchain supports unwind section type],
 	libffi_cv_as_x86_64_unwind_section_type, [
-	libffi_cv_as_x86_64_unwind_section_type=yes
-	echo '.section .eh_frame,"a",@unwind' > conftest.s
-	if $CC $CFLAGS -c conftest.s 2>&1 | grep -i warning > /dev/null; then
-	    libffi_cv_as_x86_64_unwind_section_type=no
+        cat  > conftest1.s << EOF
+.text
+.globl foo
+foo:
+jmp bar
+.section .eh_frame,"a",@unwind
+bar:
+EOF
+
+        cat > conftest2.c  << EOF
+extern void foo();
+int main(){foo();}
+EOF
+
+	libffi_cv_as_x86_64_unwind_section_type=no
+	# we ensure that we can compile _and_ link an assembly file containing an @unwind section
+	# since the compiler can support it and not the linker (ie old binutils)
+	if $CC -Wa,--fatal-warnings $CFLAGS -c conftest1.s > /dev/null 2>&1 && \
+           $CC conftest2.c conftest1.o > /dev/null 2>&1 ; then
+	    libffi_cv_as_x86_64_unwind_section_type=yes
 	fi
 	])
     if test "x$libffi_cv_as_x86_64_unwind_section_type" = xyes; then
@@ -482,11 +245,13 @@ if test "x$GCC" = "xyes"; then
   	if $CC $CFLAGS -c -fpic -fexceptions -o conftest.o conftest.c > /dev/null 2>&1; then
 	    objdump -h conftest.o > conftest.dump 2>&1
 	    libffi_eh_frame_line=`grep -n eh_frame conftest.dump | cut -d: -f 1`
-	    libffi_test_line=`expr $libffi_eh_frame_line + 1`p
-	    sed -n $libffi_test_line conftest.dump > conftest.line
-  	    if grep READONLY conftest.line > /dev/null; then
-  		libffi_cv_ro_eh_frame=yes
-  	    fi
+	    if test "x$libffi_eh_frame_line" != "x"; then
+	        libffi_test_line=`expr $libffi_eh_frame_line + 1`p
+	        sed -n $libffi_test_line conftest.dump > conftest.line
+	        if grep READONLY conftest.line > /dev/null; then
+	            libffi_cv_ro_eh_frame=yes
+	        fi
+	    fi
   	fi
   	rm -f conftest.*
       ])
@@ -536,6 +301,14 @@ AH_BOTTOM([
 AC_SUBST(TARGET)
 AC_SUBST(TARGETDIR)
 
+changequote(<,>)
+TARGET_OBJ=
+for i in $SOURCES; do
+  TARGET_OBJ="${TARGET_OBJ} src/${TARGETDIR}/"`echo $i | sed 's/[cS]$/lo/'`
+done
+changequote([,])
+AC_SUBST(TARGET_OBJ)
+
 AC_SUBST(SHELL)
 
 AC_ARG_ENABLE(debug,
@@ -548,14 +321,14 @@ AM_CONDITIONAL(FFI_DEBUG, test "$enable_debug" = "yes")
 AC_ARG_ENABLE(structs,
 [  --disable-structs       omit code for struct support],
   if test "$enable_structs" = "no"; then
-    AC_DEFINE(FFI_NO_STRUCTS, 1, [Define this is you do not want support for aggregate types.])
+    AC_DEFINE(FFI_NO_STRUCTS, 1, [Define this if you do not want support for aggregate types.])
   fi)
 AM_CONDITIONAL(FFI_DEBUG, test "$enable_debug" = "yes")
 
 AC_ARG_ENABLE(raw-api,
 [  --disable-raw-api       make the raw api unavailable],
   if test "$enable_raw_api" = "no"; then
-    AC_DEFINE(FFI_NO_RAW_API, 1, [Define this is you do not want support for the raw API.])
+    AC_DEFINE(FFI_NO_RAW_API, 1, [Define this if you do not want support for the raw API.])
   fi)
 
 AC_ARG_ENABLE(purify-safety,
@@ -569,20 +342,20 @@ AC_ARG_ENABLE(purify-safety,
 if test "x$GCC" = "xyes"; then
   if test -n "$with_cross_host" &&
      test x"$with_cross_host" != x"no"; then
-    toolexecdir='$(exec_prefix)/$(target_alias)'
-    toolexeclibdir='$(toolexecdir)/lib'
+    toolexecdir="${exec_prefix}"/'$(target_alias)'
+    toolexeclibdir="${toolexecdir}"/lib
   else
-    toolexecdir='$(libdir)/gcc-lib/$(target_alias)'
-    toolexeclibdir='$(libdir)'
+    toolexecdir="${libdir}"/gcc-lib/'$(target_alias)'
+    toolexeclibdir="${libdir}"
   fi
-  multi_os_directory=`$CC -print-multi-os-directory`
+  multi_os_directory=`$CC $CFLAGS -print-multi-os-directory`
   case $multi_os_directory in
     .) ;; # Avoid trailing /.
     ../*) toolexeclibdir=$toolexeclibdir/$multi_os_directory ;;
   esac
   AC_SUBST(toolexecdir)
 else
-  toolexeclibdir='$(libdir)'
+  toolexeclibdir="${libdir}"
 fi
 AC_SUBST(toolexeclibdir)
 
