@@ -163,7 +163,7 @@ ffi_trampoline_table_alloc ()
 		       __FILE__, __LINE__);
 	    }
 
-	  vm_deallocate (mach_task_self (), config_page, PAGE_SIZE);
+	  vm_deallocate (mach_task_self (), config_page, PAGE_MAX_SIZE);
 	  continue;
 	}
 
@@ -269,13 +269,13 @@ ffi_closure_free (void *ptr)
 
       /* Deallocate pages */
       kern_return_t kt;
-      kt = vm_deallocate (mach_task_self (), table->config_page, PAGE_SIZE);
+      kt = vm_deallocate (mach_task_self (), table->config_page, PAGE_MAX_SIZE);
       if (kt != KERN_SUCCESS)
 	fprintf (stderr, "vm_deallocate() failure: %d at %s:%d\n", kt,
 		 __FILE__, __LINE__);
 
       kt =
-	vm_deallocate (mach_task_self (), table->trampoline_page, PAGE_SIZE);
+	vm_deallocate (mach_task_self (), table->trampoline_page, PAGE_MAX_SIZE);
       if (kt != KERN_SUCCESS)
 	fprintf (stderr, "vm_deallocate() failure: %d at %s:%d\n", kt,
 		 __FILE__, __LINE__);
