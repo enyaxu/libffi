@@ -75,8 +75,8 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.  */
    x5 closure
 */
 
-	cfi_startproc
 CNAME(ffi_call_SYSV):
+	cfi_startproc
 	/* Use a stack frame allocated by our caller.  */
 	cfi_def_cfa(x1, 32);
 	stp	x29, x30, [x1]
@@ -223,16 +223,18 @@ CNAME(ffi_call_SYSV):
 	.align 4
 CNAME(ffi_closure_SYSV_V):
 	cfi_startproc
-	stp     x29, x30, [sp, #-ffi_closure_SYSV_FS]!
-	cfi_adjust_cfa_offset (ffi_closure_SYSV_FS)
-	cfi_rel_offset (x29, 0)
-	cfi_rel_offset (x30, 8)
+	stp     fp, x30, [sp, #-16]!
+	mov     fp, sp
+	sub sp, sp, #ffi_closure_SYSV_FS-16
+	cfi_def_cfa(x29, 16)
+	cfi_offset(x30, -8)
+	cfi_offset(x29, -16)
 
 	/* Save the argument passing vector registers.  */
-	stp     q0, q1, [sp, #16 + 0]
-	stp     q2, q3, [sp, #16 + 32]
-	stp     q4, q5, [sp, #16 + 64]
-	stp     q6, q7, [sp, #16 + 96]
+	stp     q0, q1, [sp, #0]
+	stp     q2, q3, [sp, #32]
+	stp     q4, q5, [sp, #64]
+	stp     q6, q7, [sp, #96]
 	b	0f
 	cfi_endproc
 
@@ -244,28 +246,31 @@ CNAME(ffi_closure_SYSV_V):
 #endif
 
 	.align	4
-	cfi_startproc
 CNAME(ffi_closure_SYSV):
-	stp     x29, x30, [sp, #-ffi_closure_SYSV_FS]!
-	cfi_adjust_cfa_offset (ffi_closure_SYSV_FS)
-	cfi_rel_offset (x29, 0)
-	cfi_rel_offset (x30, 8)
+	cfi_startproc
+	stp     fp, x30, [sp, #-16]!
+	mov     fp, sp
+	sub sp, sp, #ffi_closure_SYSV_FS-16
+	cfi_def_cfa(x29, 16)
+	cfi_offset(x30, -8)
+	cfi_offset(x29, -16)
 0:
-	mov     x29, sp
 
 	/* Save the argument passing core registers.  */
-	stp     x0, x1, [sp, #16 + 16*N_V_ARG_REG + 0]
-	stp     x2, x3, [sp, #16 + 16*N_V_ARG_REG + 16]
-	stp     x4, x5, [sp, #16 + 16*N_V_ARG_REG + 32]
-	stp     x6, x7, [sp, #16 + 16*N_V_ARG_REG + 48]
+	stp     x0, x1, [sp, #16*N_V_ARG_REG + 0]
+	stp     x2, x3, [sp, #16*N_V_ARG_REG + 16]
+	stp     x4, x5, [sp, #16*N_V_ARG_REG + 32]
+	stp     x6, x7, [sp, #16*N_V_ARG_REG + 48]
 
 	/* Load ffi_closure_inner arguments.  */
 	ldp	PTR_REG(0), PTR_REG(1), [x17, #FFI_TRAMPOLINE_CLOSURE_OFFSET]	/* load cif, fn */
 	ldr	PTR_REG(2), [x17, #FFI_TRAMPOLINE_CLOSURE_OFFSET+PTR_SIZE*2]	/* load user_data */
+#ifdef FFI_GO_CLOSURES
 .Ldo_closure:
-	add	x3, sp, #16				/* load context */
+#endif
+	add	x3, sp, #0				/* load context */
 	add	x4, sp, #ffi_closure_SYSV_FS		/* load stack */
-	add	x5, sp, #16+CALL_CONTEXT_SIZE		/* load rvalue */
+	add	x5, sp, CALL_CONTEXT_SIZE		/* load rvalue */
 	mov	x6, x8					/* load struct_rval */
 	bl      CNAME(ffi_closure_SYSV_inner)
 
@@ -273,7 +278,7 @@ CNAME(ffi_closure_SYSV):
 	adr	x1, 0f
 	and	w0, w0, #AARCH64_RET_MASK
 	add	x1, x1, x0, lsl #3
-	add	x3, sp, #16+CALL_CONTEXT_SIZE
+	add	x3, sp, CALL_CONTEXT_SIZE
 	br	x1
 
 	/* Note that each table entry is 2 insns, and thus 8 bytes.  */
@@ -341,10 +346,9 @@ CNAME(ffi_closure_SYSV):
 30:	ldrsw	x0, [x3, #BE(4)]	/* SINT32 */
 	nop
 31:					/* reserved */
-99:	ldp     x29, x30, [sp], #ffi_closure_SYSV_FS
-	cfi_adjust_cfa_offset (-ffi_closure_SYSV_FS)
-	cfi_restore (x29)
-	cfi_restore (x30)
+99:
+	sub    sp, fp, #0
+	ldp     fp, lr, [sp], #16
 	ret
 	cfi_endproc
 
@@ -403,8 +407,8 @@ CNAME(ffi_go_closure_SYSV_V):
 #endif
 
 	.align	4
-	cfi_startproc
 CNAME(ffi_go_closure_SYSV):
+	cfi_startproc
 	stp     x29, x30, [sp, #-ffi_closure_SYSV_FS]!
 	cfi_adjust_cfa_offset (ffi_closure_SYSV_FS)
 	cfi_rel_offset (x29, 0)
